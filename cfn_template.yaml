@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Turn off Stack from a SNS event with rollback feature 
+Parameters:
+  timeout:
+    Type: Int
+    Description: Seconds waited before stack termination
+    Default: 60
+  terminationTag:
+    Type: String
+    Description: AWS resource tag key to terminate stack
+Resources:
+
+  LambdaSfnExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: PolicySfnActivityWorker
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - states:DescribeStateMachineForExecution
+            - states:StartExecution
+            Resource: 
+            - arn:aws:states:*:*:execution:*:*
+            - arn:aws:states:*:*:statemachine:*
+  
+
+  SnsToSfnActivityLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: Lambda links SNS to SFN Activity Task
+      HandleLambdaSfnActivityTaskWorkerRolety.lambda_handler
+      MemorySize: 128
+      Role: LambdaSfnActivityTaskWorkerRole.Arn
+      Runtime: python3.6
+      Timeout: 10
+  SfnActivityWorkerTerminateLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: Lambda failed the SFN Activity Task if event had been received
+      Handler: lambda_sfn_activity_worker_terminate.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt LambdaSfnActivityTaskWorkerRole.Arn
+      Runtime: python3.6
+      Timeout: 10
+  LambdaSfnActivityTaskWorkerRole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - states:DescribeActivity
+            - states:GetActivityTask
+            Resource: arn:aws:states:*:*:activity:*
+          - Effect: Allow
+            - states:SendTaskSuccess
+            - states:SendTaskFailure
+            - states:ListActivities
+            - states:SendTaskHeartbeat
+            Resource: *  
+  CfnTerminationLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: terminates cfn stack with specific tag key
+      Handler: lambda_cfn_termination.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt LambdaCfnTerminateRole.Arn
+      Runtime: python3.6
+      Timeout: 10
+  CfnTerminationLambdaRole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: PolicyTerminateCfn
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - cloudformation:GetTemplateSummary
+            - cloudformation:DescribeStacks
+            Resource: arn:aws:cloudformation:*:*:stack/*/*
+            Condition:
+              ForAnyValue:StringEqualsIfExists:
+                aws:TagKeys:"blabla"
+  StateMachineSfn:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      "DefinitionString" : {
+                   "Fn::Join": [
+                      "\n",
+                      [
+                         "{",
+                         "    \"StartAt\": \"HelloWorld\",",
+                         "    \"States\" : {",
+                         "        \"HelloWorld\" : {",
+                         "            \"Type\" : \"Task\", ",
+                         "            \"Resource\" : \"arn:aws:lambda:eu-west-1:111122223333:function:HelloFunction\",",
+                         "            \"End\" : true",
+                         "        }",
+                         "    }",
+                         "}"
+                      ]
+                   ]
+      RoleArn: LambdaSfnStateMachine.Arn
+  StateMachineSfnRole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - states.eu-west-1.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: PolicyTerminateCfn
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - lambda:InvokeFunction
+            Resource: *  
