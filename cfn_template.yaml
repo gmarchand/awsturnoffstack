@@ -11,7 +11,7 @@ Parameters:
     Description: AWS resource tag key to terminate stack
 Resources:
 
-  LambdaSfnExecutionRole:
+  SnsToSfnActivityLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:
       AssumeRolePolicyDocument:
@@ -35,32 +35,77 @@ Resources:
             Resource: arn:aws:logs:*:*:*
           - Effect: Allow
             Action:
-            - states:DescribeStateMachineForExecution
-            - states:StartExecution
+            - states:List*
+            - states:Describe*
+            - states:SendTask*
             Resource: 
             - arn:aws:states:*:*:execution:*:*
             - arn:aws:states:*:*:statemachine:*
-  
-
   SnsToSfnActivityLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
       Description: Lambda links SNS to SFN Activity Task
-      HandleLambdaSfnActivityTaskWorkerRolety.lambda_handler
+      Handler: LambdaSfnActivityTaskWorkerRole.lambda_handler
       MemorySize: 128
-      Role: LambdaSfnActivityTaskWorkerRole.Arn
+      Role: SnsToSfnActivityLambdaRole.Arn
       Runtime: python3.6
       Timeout: 10
+    Environment:
+      Variables:
+        ACTIVITY_ARN:StateMachineActivity.Arn
+
+  SnsToSfnExecutionLambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: PolicySfnExecuction
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - states:List*
+            - states:Describe*
+            - states:StartExecution
+            Resource:
+            - arn:aws:states:*:*:execution:*:*
+            - arn:aws:states:*:*:statemachine:*
+  SnsToSfnExecutionLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: Lambda links SNS to SFN Execution
+      Handler: lambda_sns_to_sfn_execution.lambda_handler
+      MemorySize: 128
+      Role: SnsToSfnExecutionLambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 10
+      Environment:
+      Variables:
+        SFN_ARN:StateMachineSfn.Arn
   SfnActivityWorkerTerminateLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
       Description: Lambda failed the SFN Activity Task if event had been received
       Handler: lambda_sfn_activity_worker_terminate.lambda_handler
       MemorySize: 128
-      Role: !GetAtt LambdaSfnActivityTaskWorkerRole.Arn
+      Role: !GetAtt SfnActivityWorkerTerminateLambdaRole.Arn
       Runtime: python3.6
       Timeout: 10
-  LambdaSfnActivityTaskWorkerRole: 
+  SfnActivityWorkerTerminateLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -92,7 +137,43 @@ Resources:
             - states:SendTaskFailure
             - states:ListActivities
             - states:SendTaskHeartbeat
-            Resource: *  
+            Resource: *
+  SfnToSnsLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Description: Lambda publish message from SFN to SNS
+      Handler: lambda_sfn_to_activity.lambda_handler
+      MemorySize: 128
+      Role: !GetAtt SfnToSnsLambdaRole.Arn
+      Runtime: python3.6
+      Timeout: 10
+  SfnToSnsLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: PublishSNS
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - List*
+            - Publish
+            Resource: *
   CfnTerminationLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -151,6 +232,7 @@ Resources:
                          "}"
                       ]
                    ]
+                  }
       RoleArn: LambdaSfnStateMachine.Arn
   StateMachineSfnRole: 
     Type: AWS::IAM::Role
@@ -173,4 +255,33 @@ Resources:
           - Effect: Allow
             Action:
             - lambda:InvokeFunction
-            Resource: *  
+            Resource: *
+  StateMachineActivity:
+    Type: "AWS::StepFunctions::Activity"
+    Properties:
+      Name: SwitchOffCancelActivity
+  SnsTopicTerminateNotifRcv:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        -
+          Endpoint:
+            Fn::GetAtt:
+              - "SnsToSfnExecutionLambda"
+              - "Arn"
+          Protocol: "lambda"
+
+  SnsTopicCancelNotifRcv:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      Subscription:
+        -
+          Endpoint:
+            Fn::GetAtt:
+              - "SnsToSfnActivityLambda"
+              - "Arn"
+          Protocol: "lambda"
+  SnsTopicSendNotif:
+    Type: "AWS::SNS::Topic"
+  SnsTopicTerminateAction:
+    Type: "AWS::SNS::Topic"
