@@ -53,7 +53,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          ACTIVITY_ARN: !GetAtt [ StateMachineActivity, Arn ]
+          ACTIVITY_ARN: !Ref StateMachineActivity
   SnsToSfnExecutionLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:
