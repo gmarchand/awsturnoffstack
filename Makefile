@@ -28,17 +28,16 @@ validate-stack: ## cfn validate template
 	aws cloudformation validate-template --template-body file://cfn_template.yaml
 
 create-stack: lambda-package	## cfn create stack
+	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
 	aws cloudformation deploy --template-file /tmp/packaged-template.yaml --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM
 
-lambda-package: ## package lambda
-	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
 
-update-cfn: ## cfn update cfn template
+update-stack: ## cfn update cfn template
+	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
 	aws cloudformation create-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM --template-body file:///tmp/packaged-template.yaml
 	aws cloudformation describe-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
+	sleep 5
 	aws cloudformation execute-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
-
-update-stack: lambda-package update-cfn ## update stack
 
 delete-stack: ## cfn delete stack
 	aws cloudformation delete-stack --stack-name ${STACK_NAME}
