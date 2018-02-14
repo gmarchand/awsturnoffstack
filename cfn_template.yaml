@@ -95,7 +95,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          SFN_ARN: toto
+          SFN_ARN: !Ref StateMachineSfn
   SfnActivityWorkerTerminateLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -105,6 +105,9 @@ Resources:
       Role: !GetAtt [ SfnActivityWorkerTerminateLambdaRole, Arn ]
       Runtime: python3.6
       Timeout: 10
+      Environment:
+        Variables:
+          ACTIVITY_ARN: !Ref StateMachineActivity
   SfnActivityWorkerTerminateLambdaRole:
     Type: AWS::IAM::Role
     Properties:
