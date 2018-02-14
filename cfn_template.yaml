@@ -173,8 +173,8 @@ Resources:
             Resource: arn:aws:logs:*:*:*
           - Effect: Allow
             Action:
-              - List*
-              - Publish
+              - sns:List*
+              - sns:Publish
             Resource: "*"
   CfnTerminationLambda:
     Type: 'AWS::Serverless::Function'
@@ -211,10 +211,7 @@ Resources:
             Action:
             - cloudformation:GetTemplateSummary
             - cloudformation:DescribeStacks
-            Resource: arn:aws:cloudformation:*:*:stack/*/*
-            Condition:
-              ForAnyValue:StringEqualsIfExists:
-                aws:TagKeys:"blabla"
+            Resource: "*"
   StateMachineSfn:
     Type: "AWS::StepFunctions::StateMachine"
     Properties:
@@ -235,7 +232,7 @@ Resources:
                       ]
                    ]
                   }
-      RoleArn: LambdaSfnStateMachine.Arn
+      RoleArn: !GetAtt StateMachineSfnRole.Arn
   StateMachineSfnRole: 
     Type: AWS::IAM::Role
     Properties:
