@@ -53,7 +53,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          ACTIVITY_ARN:StateMachineActivity.Arn
+          ACTIVITY_ARN:toto
 
   SnsToSfnExecutionLambdaRole:
     Type: "AWS::IAM::Role"
@@ -96,7 +96,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          SFN_ARN:StateMachineSfn.Arn
+          SFN_ARN:toto
   SfnActivityWorkerTerminateLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
