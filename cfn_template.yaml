@@ -3,12 +3,13 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: Turn off Stack from a SNS event with rollback feature 
 Parameters:
   timeout:
-    Type: Int
+    Type: Number
     Description: Seconds waited before stack termination
     Default: 60
   terminationTag:
     Type: String
     Description: AWS resource tag key to terminate stack
+    Default: "notag=notag"
 Resources:
 
   SnsToSfnActivityLambdaRole:
@@ -20,39 +21,39 @@ Resources:
         - Effect: Allow
           Principal:
             Service:
-            - lambda.amazonaws.com
+              - lambda.amazonaws.com
           Action:
-          - sts:AssumeRole
+            - sts:AssumeRole
       Path: "/"
       Policies:
-      - PolicyName: PolicySfnActivityWorker
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:*
-            Resource: arn:aws:logs:*:*:*
-          - Effect: Allow
-            Action:
-            - states:List*
-            - states:Describe*
-            - states:SendTask*
-            Resource: 
-            - arn:aws:states:*:*:execution:*:*
-            - arn:aws:states:*:*:statemachine:*
+        - PolicyName: "PolicySfnActivityWorker"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - states:List*
+                  - states:Describe*
+                  - states:SendTask*
+                Resource:
+                - arn:aws:states:*:*:execution:*:*
+                - arn:aws:states:*:*:statemachine:*
   SnsToSfnActivityLambda:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Description: Lambda links SNS to SFN Activity Task
       Handler: LambdaSfnActivityTaskWorkerRole.lambda_handler
       MemorySize: 128
-      Role: SnsToSfnActivityLambdaRole.Arn
+      Role: !GetAtt SnsToSfnActivityLambdaRole.Arn
       Runtime: python3.6
       Timeout: 10
-    Environment:
-      Variables:
-        ACTIVITY_ARN:StateMachineActivity.Arn
+      Environment:
+        Variables:
+          ACTIVITY_ARN:StateMachineActivity.Arn
 
   SnsToSfnExecutionLambdaRole:
     Type: "AWS::IAM::Role"
@@ -85,17 +86,17 @@ Resources:
             - arn:aws:states:*:*:execution:*:*
             - arn:aws:states:*:*:statemachine:*
   SnsToSfnExecutionLambda:
-    Type: 'AWS::Serverless::Function'
+    Type: AWS::Serverless::Function
     Properties:
       Description: Lambda links SNS to SFN Execution
       Handler: lambda_sns_to_sfn_execution.lambda_handler
       MemorySize: 128
-      Role: SnsToSfnExecutionLambdaRole.Arn
+      Role: !GetAtt SnsToSfnExecutionLambdaRole.Arn
       Runtime: python3.6
       Timeout: 10
       Environment:
-      Variables:
-        SFN_ARN:StateMachineSfn.Arn
+        Variables:
+          SFN_ARN:StateMachineSfn.Arn
   SfnActivityWorkerTerminateLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -123,21 +124,22 @@ Resources:
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
+          - Effect: "Allow"
             Action:
-            - logs:*
-            Resource: arn:aws:logs:*:*:*
-          - Effect: Allow
+              - "logs:*"
+            Resource: "arn:aws:logs:*:*:*"
+          - Effect: "Allow"
             Action:
-            - states:DescribeActivity
-            - states:GetActivityTask
-            Resource: arn:aws:states:*:*:activity:*
-          - Effect: Allow
-            - states:SendTaskSuccess
-            - states:SendTaskFailure
-            - states:ListActivities
-            - states:SendTaskHeartbeat
-            Resource: *
+              - "states:DescribeActivity"
+              - "states:GetActivityTask"
+            Resource: "arn:aws:states:*:*:activity:*"
+          - Effect: "Allow"
+            Action:
+              - "states:SendTaskSuccess"
+              - "states:SendTaskFailure"
+              - "states:ListActivities"
+              - "states:SendTaskHeartbeat"
+            Resource: "*"
   SfnToSnsLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -167,20 +169,20 @@ Resources:
           Statement:
           - Effect: Allow
             Action:
-            - logs:*
+              - logs:*
             Resource: arn:aws:logs:*:*:*
           - Effect: Allow
             Action:
-            - List*
-            - Publish
-            Resource: *
+              - List*
+              - Publish
+            Resource: "*"
   CfnTerminationLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
       Description: terminates cfn stack with specific tag key
       Handler: lambda_cfn_termination.lambda_handler
       MemorySize: 128
-      Role: !GetAtt LambdaCfnTerminateRole.Arn
+      Role: !GetAtt CfnTerminationLambdaRole.Arn
       Runtime: python3.6
       Timeout: 10
   CfnTerminationLambdaRole: 
@@ -252,10 +254,10 @@ Resources:
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
+          - Effect: "Allow"
             Action:
-            - lambda:InvokeFunction
-            Resource: *
+              - lambda:InvokeFunction
+            Resource: "*"
   StateMachineActivity:
     Type: "AWS::StepFunctions::Activity"
     Properties:
