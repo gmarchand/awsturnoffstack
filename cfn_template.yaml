@@ -91,7 +91,7 @@ Resources:
       Description: Lambda links SNS to SFN Execution
       Handler: lambda_sns_to_sfn_execution.lambda_handler
       MemorySize: 128
-      Role: !GetAtt SnsToSfnExecutionLambdaRole.Arn
+      Role: !GetAtt [ SnsToSfnExecutionLambdaRole, Arn ]
       Runtime: python3.6
       Timeout: 10
       Environment:
@@ -103,7 +103,7 @@ Resources:
       Description: Lambda failed the SFN Activity Task if event had been received
       Handler: lambda_sfn_activity_worker_terminate.lambda_handler
       MemorySize: 128
-      Role: !GetAtt SfnActivityWorkerTerminateLambdaRole.Arn
+      Role: !GetAtt [ SfnActivityWorkerTerminateLambdaRole, Arn ]
       Runtime: python3.6
       Timeout: 10
   SfnActivityWorkerTerminateLambdaRole:
@@ -146,7 +146,7 @@ Resources:
       Description: Lambda publish message from SFN to SNS
       Handler: lambda_sfn_to_activity.lambda_handler
       MemorySize: 128
-      Role: !GetAtt SfnToSnsLambdaRole.Arn
+      Role: !GetAtt [ SfnToSnsLambdaRole, Arn ]
       Runtime: python3.6
       Timeout: 10
   SfnToSnsLambdaRole:
@@ -182,7 +182,7 @@ Resources:
       Description: terminates cfn stack with specific tag key
       Handler: lambda_cfn_termination.lambda_handler
       MemorySize: 128
-      Role: !GetAtt CfnTerminationLambdaRole.Arn
+      Role: !GetAtt [ CfnTerminationLambdaRole,Arn ]
       Runtime: python3.6
       Timeout: 10
   CfnTerminationLambdaRole: 
