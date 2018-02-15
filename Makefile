@@ -36,7 +36,7 @@ update-stack: ## cfn update cfn template
 	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
 	aws cloudformation create-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM --template-body file:///tmp/packaged-template.yaml
 	aws cloudformation describe-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
-	sleep 5
+	sleep 10
 	aws cloudformation execute-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
 
 delete-stack: ## cfn delete stack
