@@ -1,0 +1,84 @@
+{
+  "Comment": "Wait a cancel event from an Activity Worker. if no event comes from, step function executes the task",
+  "StartAt": "InitVar",
+  "States": {
+    "InitVar": {
+      "Comment": "Initiate variables to track the state and deliver good message",
+      "Type": "Pass",
+      "Result": {
+        "terminate": false,
+        "cancel": false
+      },
+      "Next": "MessageStart"
+    },
+    "MessageStart": {
+      "Comment": "Send a notification that task will be execute soon",
+      "Type": "Pass",
+      "Next": "Parallel"
+    },
+    "Parallel": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "WaitWorker",
+          "States": {
+            "WaitWorker": {
+              "Comment": "The Activity is scheduled, we are waiting for a cancellation event",
+              "Type": "Wait",
+              "Seconds": 5,
+              "Next": "ActivityWorkerStatusTerminate"
+            },
+            "ActivityWorkerStatusTerminate": {
+              "Comment": "This task gets an activity task and send a fail status",
+              "Type": "Task",
+              "Resource": "arn:aws:lambda:eu-west-1:862440218923:function:TurnOffStackActivityWorkerStatusTerminate",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CancelActivity",
+          "States": {
+            "CancelActivity": {
+              "Type": "Task",
+              "Comment": "Activity is waiting for an event from SNS",
+              "Resource": "arn:aws:states:eu-west-1:862440218923:activity:NewPhoenixServerActivity",
+              "TimeoutSeconds": 10,
+              "Next": "Cancel",
+              "Catch": [
+                {
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
+                  "Next": "Terminate"
+                }
+              ]
+            },
+            "Cancel": {
+              "Comment": "Activity Worker sends a cancellation event, so we cancel the task",
+              "Type": "Pass",
+              "Result": {
+                "cancel": true
+              },
+              "End": true
+            },
+            "Terminate": {
+              "Type": "Pass",
+              "Comment": "No cancellation event, we execute the task",
+              "Result": {
+                "terminate": true
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "MessageEnd"
+    },
+    "MessageEnd": {
+      "Comment": "Send an ending message",
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
