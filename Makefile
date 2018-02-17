@@ -13,6 +13,9 @@ GIT_REF_SHORT?=              $(shell git log -1|head -n1|cut -d ' ' -f2- | head 
 
 CFN_CHANGE_SET?=             $(GIT_REF_NAME)-$(GIT_REF_SHORT)
 
+help:           ## prints help
+	@cat $(MAKEFILE_LIST) | grep -e "^[a-zA-Z_\-]*: *.*## *" | awk 'BEGIN {FS = ":.*?## "}; {printf " > \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
 info: ## env info
 	@echo GIT_FQDN = $(GIT_FQDN)
 	@echo GIT_REF_NAME = $(GIT_REF_NAME)
@@ -20,9 +23,6 @@ info: ## env info
 	@echo STACK_NAME = $(STACK_NAME)
 	@echo S3_BUCKET = $(S3_BUCKET)
 	@echo CFN_CHANGE_SET = $(CFN_CHANGE_SET)
-
-help:           ## prints help
-	@cat $(MAKEFILE_LIST) | grep -e "^[a-zA-Z_\-]*: *.*## *" | awk 'BEGIN {FS = ":.*?## "}; {printf " > \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 validate-stack: ## cfn validate template
 	aws cloudformation validate-template --template-body file://cfn_template.yaml
