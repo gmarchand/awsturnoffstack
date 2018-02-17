@@ -11,7 +11,8 @@ def lambda_handler(event, context):
 
     client = boto3.client("stepfunctions")
     sfnArn = os.environ['SFN_ARN']
-    
+    SnsTopicSendNotif= os.environ['SNS_SEND_NOTIF_ARN']
+    SnsTopicTerminateAction= os.environ['SNS_TERMINATE_ACTION_ARN']
 
     response = client.start_execution(
         stateMachineArn=sfnArn,

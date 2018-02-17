@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
-Description: Turn off Stack from a SNS event with rollback feature 
+Description: Turn off Stack from a SNS event with rollback features
 Parameters:
   timeout:
     Type: Number
@@ -96,6 +96,8 @@ Resources:
       Environment:
         Variables:
           SFN_ARN: !Ref StateMachineSfn
+          SNS_SEND_NOTIF_ARN: !Ref TopicSendNotifSns
+          SNS_TERMINATE_ACTION_ARN: !Ref TopicTerminateActionSns
   SfnActivityWorkerFailLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -235,7 +237,8 @@ Resources:
                 },
                 "MessageStart": {
                   "Comment": "Send a notification that task will be execute soon",
-                  "Type": "Pass",
+                  "Type": "Task",
+                  "Resource": "${SfnToSnsLambda}",
                   "Next": "Parallel"
                 },
                 "Parallel": {
@@ -252,7 +255,8 @@ Resources:
                         },
                         "ActivityWorkerStatusTerminate": {
                           "Comment": "This task gets an activity task and send a fail status",
-                          "Type": "Pass",
+                          "Type": "Task",
+                          "Resource": "${SfnActivityWorkerFailLambda}",
                           "End": true
                         }
                       }
@@ -284,11 +288,9 @@ Resources:
                           "End": true
                         },
                         "Terminate": {
-                          "Type": "Pass",
+                          "Type": "Task",
+                          "Resource": "${CfnTerminationLambda}",
                           "Comment": "No cancellation event, we execute the task",
-                          "Result": {
-                            "terminate": true
-                          },
                           "End": true
                         }
                       }
@@ -298,12 +300,13 @@ Resources:
                 },
                 "MessageEnd": {
                   "Comment": "Send an ending message",
-                  "Type": "Pass",
+                  "Type": "Task",
+                  "Resource": "${SfnToSnsLambda}",
                   "End": true
                 }
               }
             }
-          - {SfnToSnsLambda: !GetAtt [ SfnToSnsLambda, Arn ]}
+          - {SfnToSnsLambda: !GetAtt [ SfnToSnsLambda, Arn ], SfnActivityWorkerFailLambda: !GetAtt [ SfnActivityWorkerFailLambda, Arn ], StateMachineActivity: !Ref StateMachineActivity, CfnTerminationLambda: !GetAtt [ CfnTerminationLambda, Arn ] }
       RoleArn: !GetAtt StateMachineSfnRole.Arn
   StateMachineSfnRole: 
     Type: AWS::IAM::Role
@@ -331,7 +334,7 @@ Resources:
     Type: "AWS::StepFunctions::Activity"
     Properties:
       Name: SwitchOffCancelActivity
-  SnsTopicTerminateNotifRcv:
+  TopicTerminateNotifRcvSns:
     Type: "AWS::SNS::Topic"
     Properties:
       Subscription:
@@ -341,7 +344,7 @@ Resources:
               - "SnsToSfnExecutionLambda"
               - "Arn"
           Protocol: "lambda"
-  SnsTopicCancelNotifRcv:
+  TopicCancelNotifRcvSns:
     Type: "AWS::SNS::Topic"
     Properties:
       Subscription:
@@ -351,7 +354,22 @@ Resources:
               - "SnsToSfnActivityLambda"
               - "Arn"
           Protocol: "lambda"
-  SnsTopicSendNotif:
+  TopicSendNotifSns:
     Type: "AWS::SNS::Topic"
-  SnsTopicTerminateAction:
+  TopicTerminateActionSns:
     Type: "AWS::SNS::Topic"
+  Outputs:
+    TopicTerminateNotifRcvSns:
+      Description: Topic SNS to send a deletion notification of environment
+      Value: !GetAtt TopicTerminateNotifRcvSns
+    TopicCancelNotifRcvSns:
+      Description: Topic SNS to send a cancelation notification of environment deletion
+      Value: !GetAtt TopicCancelNotifRcvSns
+    TopicSendNotifSns:
+      Description: Topic SNS to receive information
+      Value: !GetAtt TopicSendNotifSns
+    TopicTerminateActionSns:
+      Description: Topic SNS to receive order of environment deletion
+      Value: !GetAtt TopicTerminateActionSns
+
+
