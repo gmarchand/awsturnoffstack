@@ -220,18 +220,97 @@ Resources:
       DefinitionString:
         !Sub
           - |-
-            {
-              "Comment": "A Hello World AWL example using an AWS Lambda function",
-              "StartAt": "HelloWorld",
-              "States": {
-                "HelloWorld": {
-                  "Type": "Task",
-                  "Resource": "${lambdaArn}",
-                  "End": true
+              {
+                "Comment": "Wait a cancel event from an Activity Worker. if no event comes from, step function executes the task",
+                "StartAt": "InitVar",
+                "States": {
+                  "InitVar": {
+                    "Comment": "Initiate variables to track the state and deliver good message",
+                    "Type": "Pass",
+                    "Result": {
+                      "terminate": false,
+                      "cancel": false
+                    },
+                    "Next": "MessageStart"
+                  },
+                  "MessageStart": {
+                    "Comment": "Send a notification that task will be execute soon",
+                    "Type": "Task",
+                    "Resource": "${SfnToSnsLambda}",
+                    "Next": "Parallel"
+                  },
+                  "Parallel": {
+                    "Type": "Parallel",
+                    "Branches": [
+                      {
+                        "StartAt": "WaitWorker",
+                        "States": {
+                          "WaitWorker": {
+                            "Comment": "The Activity is scheduled, we are waiting for a cancellation event",
+                            "Type": "Wait",
+                            "Seconds": 5,
+                            "Next": "ActivityWorkerStatusTerminate"
+                          },
+                          "ActivityWorkerStatusTerminate": {
+                            "Comment": "This task gets an activity task and send a fail status",
+                            "Type": "Task",
+                            "Resource": "${SfnActivityWorkerFailLambda}",
+                            "End": true
+                          }
+                        }
+                      },
+                      {
+                        "StartAt": "CancelActivity",
+                        "States": {
+                          "CancelActivity": {
+                            "Type": "Task",
+                            "Comment": "Activity is waiting for an event from SNS",
+                            "Resource": "${StateMachineActivity}",
+                            "TimeoutSeconds": 10,
+                            "Next": "Cancel",
+                            "Catch": [
+                              {
+                                "ErrorEquals": [
+                                  "States.ALL"
+                                ],
+                                "Next": "Terminate"
+                              }
+                            ]
+                          },
+                          "Cancel": {
+                            "Comment": "Activity Worker sends a cancellation event, so we cancel the task",
+                            "Type": "Pass",
+                            "Result": {
+                              "cancel": true
+                            },
+                            "End": true
+                          },
+                          "Terminate": {
+                            "Type": "Task",
+                            "Resource": "${CfnTerminationLambda}",
+                            "Comment": "No cancellation event, we execute the task",
+                            "Result": {
+                              "terminate": true
+                            },
+                            "End": true
+                          }
+                        }
+                      }
+                    ],
+                    "Next": "MessageEnd"
+                  },
+                  "MessageEnd": {
+                    "Comment": "Send an ending message",
+                    "Type": "Task",
+                    "Resource": "${SfnToSnsLambda}",
+                    "End": true
+                  }
                 }
               }
-            }
-          - {lambdaArn: !GetAtt [ SfnToSnsLambda, Arn ]}
+          - {SfnToSnsLambda: !GetAtt [ SfnToSnsLambda, Arn ]}
+          - {SfnActivityWorkerFailLambda: !GetAtt [ SfnActivityWorkerFailLambda, Arn ]}
+          - {StateMachineActivity: !GetAtt [ StateMachineActivity, Arn ]}
+          - {CfnTerminationLambda: !GetAtt [ CfnTerminationLambda, Arn ]}
       RoleArn: !GetAtt StateMachineSfnRole.Arn
   StateMachineSfnRole: 
     Type: AWS::IAM::Role

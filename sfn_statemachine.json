@@ -13,7 +13,8 @@
     },
     "MessageStart": {
       "Comment": "Send a notification that task will be execute soon",
-      "Type": "Pass",
+      "Type": "Task",
+      "Resource": "${SfnToSnsLambda}",
       "Next": "Parallel"
     },
     "Parallel": {
@@ -31,7 +32,7 @@
             "ActivityWorkerStatusTerminate": {
               "Comment": "This task gets an activity task and send a fail status",
               "Type": "Task",
-              "Resource": "arn:aws:lambda:eu-west-1:862440218923:function:TurnOffStackActivityWorkerStatusTerminate",
+              "Resource": "${SfnActivityWorkerFailLambda}",
               "End": true
             }
           }
@@ -42,7 +43,7 @@
             "CancelActivity": {
               "Type": "Task",
               "Comment": "Activity is waiting for an event from SNS",
-              "Resource": "arn:aws:states:eu-west-1:862440218923:activity:NewPhoenixServerActivity",
+              "Resource": "${StateMachineActivity}",
               "TimeoutSeconds": 10,
               "Next": "Cancel",
               "Catch": [
@@ -63,7 +64,8 @@
               "End": true
             },
             "Terminate": {
-              "Type": "Pass",
+              "Type": "Task",
+              "Resource": "${CfnTerminationLambda}",
               "Comment": "No cancellation event, we execute the task",
               "Result": {
                 "terminate": true
@@ -77,7 +79,8 @@
     },
     "MessageEnd": {
       "Comment": "Send an ending message",
-      "Type": "Pass",
+      "Type": "Task",
+      "Resource": "${SfnToSnsLambda}",
       "End": true
     }
   }
