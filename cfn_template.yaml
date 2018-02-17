@@ -96,19 +96,19 @@ Resources:
       Environment:
         Variables:
           SFN_ARN: !Ref StateMachineSfn
-  SfnActivityWorkerTerminateLambda:
+  SfnActivityWorkerFailLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
       Description: Lambda failed the SFN Activity Task if event had been received
-      Handler: lambda_sfn_activity_worker_terminate.lambda_handler
+      Handler: lambda_sfn_activity_worker_fail.lambda_handler
       MemorySize: 128
-      Role: !GetAtt [ SfnActivityWorkerTerminateLambdaRole, Arn ]
+      Role: !GetAtt [ SfnActivityWorkerFailLambdaRole, Arn ]
       Runtime: python3.6
       Timeout: 10
       Environment:
         Variables:
           ACTIVITY_ARN: !Ref StateMachineActivity
-  SfnActivityWorkerTerminateLambdaRole:
+  SfnActivityWorkerFailLambdaRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -269,7 +269,6 @@ Resources:
               - "SnsToSfnExecutionLambda"
               - "Arn"
           Protocol: "lambda"
-
   SnsTopicCancelNotifRcv:
     Type: "AWS::SNS::Topic"
     Properties:
