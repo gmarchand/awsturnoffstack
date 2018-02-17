@@ -235,8 +235,7 @@ Resources:
                 },
                 "MessageStart": {
                   "Comment": "Send a notification that task will be execute soon",
-                  "Type": "Task",
-                  "Resource": "${SfnToSnsLambda}",
+                  "Type": "Pass",
                   "Next": "Parallel"
                 },
                 "Parallel": {
@@ -253,8 +252,7 @@ Resources:
                         },
                         "ActivityWorkerStatusTerminate": {
                           "Comment": "This task gets an activity task and send a fail status",
-                          "Type": "Task",
-                          "Resource": "${SfnActivityWorkerFailLambda}",
+                          "Type": "Pass",
                           "End": true
                         }
                       }
@@ -286,8 +284,7 @@ Resources:
                           "End": true
                         },
                         "Terminate": {
-                          "Type": "Task",
-                          "Resource": "${CfnTerminationLambda}",
+                          "Type": "Pass",
                           "Comment": "No cancellation event, we execute the task",
                           "Result": {
                             "terminate": true
@@ -301,16 +298,12 @@ Resources:
                 },
                 "MessageEnd": {
                   "Comment": "Send an ending message",
-                  "Type": "Task",
-                  "Resource": "${SfnToSnsLambda}",
+                  "Type": "Pass",
                   "End": true
                 }
               }
             }
           - {SfnToSnsLambda: !GetAtt [ SfnToSnsLambda, Arn ]}
-          - {SfnActivityWorkerFailLambda: !GetAtt [ SfnActivityWorkerFailLambda, Arn ]}
-          - {StateMachineActivity: !GetAtt [ StateMachineActivity, Arn ]}
-          - {CfnTerminationLambda: !GetAtt [ CfnTerminationLambda, Arn ]}
       RoleArn: !GetAtt StateMachineSfnRole.Arn
   StateMachineSfnRole: 
     Type: AWS::IAM::Role
