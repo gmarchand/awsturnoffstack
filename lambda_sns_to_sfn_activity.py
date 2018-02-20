@@ -2,18 +2,15 @@ from __future__ import print_function
 
 import json
 import boto3
-print('Loading function')
-
+import os
 
 def lambda_handler(event, context):
     #print("Received event: " + json.dumps(event, indent=2))
-    print("Cancel Event from SNS to SFN")
 
     client = boto3.client("stepfunctions")
     activityArn = os.environ['ACTIVITY_ARN']
     taskOutput = os.environ['ACTIVITY_TASK_OUTPUT']
-    
-    
+
     message = event['Records'][0]['Sns']['Message']
     print("From SNS: " + message)
 

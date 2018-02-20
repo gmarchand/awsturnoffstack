@@ -82,8 +82,7 @@ Resources:
             - states:Describe*
             - states:StartExecution
             Resource:
-            - arn:aws:states:*:*:execution:*:*
-            - arn:aws:states:*:*:statemachine:*
+            - arn:aws:states:*:*:stateMachine:*
   SnsToSfnExecutionLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -96,8 +95,6 @@ Resources:
       Environment:
         Variables:
           SFN_ARN: !Ref StateMachineSfn
-          SNS_SEND_NOTIF_ARN: !Ref TopicSendNotifSns
-          SNS_TERMINATE_ACTION_ARN: !Ref TopicTerminateActionSns
   SfnActivityWorkerFailLambda:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -153,6 +150,10 @@ Resources:
       Role: !GetAtt [ SfnToSnsLambdaRole, Arn ]
       Runtime: python3.6
       Timeout: 10
+      Environment:
+        Variables:
+          SNS_SEND_NOTIF_ARN: !Ref TopicSendNotifSns
+          SNS_TERMINATE_ACTION_ARN: !Ref TopicTerminateActionSns
   SfnToSnsLambdaRole:
     Type: AWS::IAM::Role
     Properties:

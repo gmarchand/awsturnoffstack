@@ -26,6 +26,8 @@ info: ## env info
 	@echo S3_BUCKET = $(S3_BUCKET)
 	@echo CFN_CHANGE_SET = $(CFN_CHANGE_SET)
 	@echo DATE = $(DATE)
+	@echo SNS_SEND_DELETION = $(SNS_SEND_DELETION)
+	@echo SNS_SEND_CANCELATION = $(SNS_SEND_CANCELATION)
 
 validate-stack: ## cfn validate template
 	aws cloudformation validate-template --template-body file://cfn_template.yaml
@@ -39,7 +41,7 @@ update-stack: ## cfn update cfn template
 	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
 	aws cloudformation create-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM --template-body file:///tmp/packaged-template.yaml
 	aws cloudformation describe-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
-	sleep 8
+	sleep 10
 	aws cloudformation execute-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
 
 delete-stack: ## cfn delete stack
@@ -51,6 +53,9 @@ cfn-gitco: ## auto git commit to debut cfn
 
 cfn-watcher: cfn-gitco update-stack ## cfn file watcher
 
-send-destroy : ## send destroy message
+send-deletion : ## send deletion message
+	aws sns publish --topic-arn "$(SNS_SEND_DELETION)" --message "Destroy it please"
 
+send-cancelation : ## send cancelation message
+	aws sns publish --topic-arn "$(SNS_SEND_CANCELATION)" --message "Destroy it please"
 
