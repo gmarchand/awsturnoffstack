@@ -358,18 +358,18 @@ Resources:
     Type: "AWS::SNS::Topic"
   TopicTerminateActionSns:
     Type: "AWS::SNS::Topic"
-  Outputs:
-    TopicTerminateNotifRcvSns:
-      Description: Topic SNS to send a deletion notification of environment
-      Value: !GetAtt TopicTerminateNotifRcvSns
-    TopicCancelNotifRcvSns:
-      Description: Topic SNS to send a cancelation notification of environment deletion
-      Value: !GetAtt TopicCancelNotifRcvSns
-    TopicSendNotifSns:
-      Description: Topic SNS to receive information
-      Value: !GetAtt TopicSendNotifSns
-    TopicTerminateActionSns:
-      Description: Topic SNS to receive order of environment deletion
-      Value: !GetAtt TopicTerminateActionSns
+Outputs:
+  SnsSendDeletion:
+    Description: Topic SNS to send a deletion notification of environment
+    Value: !Ref TopicTerminateNotifRcvSns
+  SnsSendCancelation:
+    Description: Topic SNS to send a cancelation notification of environment deletion
+    Value: !Ref TopicCancelNotifRcvSns
+  SnsReceiveMessage:
+    Description: Topic SNS to receive information
+    Value: !Ref TopicSendNotifSns
+  SnsReceiveDeletionAxction:
+    Description: Topic SNS to receive order of environment deletion
+    Value: !Ref TopicTerminateActionSns
 
 
