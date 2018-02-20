@@ -53,9 +53,9 @@ cfn-gitco: ## auto git commit to debut cfn
 
 cfn-watcher: cfn-gitco update-stack ## cfn file watcher
 
-send-deletion : ## send deletion message
+send-deletion: ## send deletion message
 	aws sns publish --topic-arn "$(SNS_SEND_DELETION)" --message "Destroy it please"
 
-send-cancelation : ## send cancelation message
+send-cancelation: ## send cancelation message
 	aws sns publish --topic-arn "$(SNS_SEND_CANCELATION)" --message "Destroy it please"
 

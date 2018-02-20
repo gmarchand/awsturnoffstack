@@ -145,7 +145,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Description: Lambda publish message from SFN to SNS
-      Handler: lambda_sfn_to_activity.lambda_handler
+      Handler: lambda_sfn_to_sns.lambda_handler
       MemorySize: 128
       Role: !GetAtt [ SfnToSnsLambdaRole, Arn ]
       Runtime: python3.6
@@ -345,6 +345,13 @@ Resources:
               - "SnsToSfnExecutionLambda"
               - "Arn"
           Protocol: "lambda"
+  TopicTerminateNotifRcvSnsPerm:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !GetAtt [ SnsToSfnExecutionLambda, Arn ]
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref TopicTerminateNotifRcvSns
   TopicCancelNotifRcvSns:
     Type: "AWS::SNS::Topic"
     Properties:
