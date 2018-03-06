@@ -54,8 +54,15 @@ cfn-gitco: ## auto git commit to debut cfn
 cfn-watcher: cfn-gitco update-stack ## cfn file watcher
 
 send-deletion: ## send deletion message
-	aws sns publish --topic-arn "$(SNS_SEND_DELETION)" --message "Destroy it please"
+	aws sns publish --topic-arn "$(SNS_SEND_DELETION)" --message "launch stack termination"
 
 send-cancelation: ## send cancelation message
-	aws sns publish --topic-arn "$(SNS_SEND_CANCELATION)" --message "Destroy it please"
+	aws sns publish --topic-arn "$(SNS_SEND_CANCELATION)" --message "cancel stack termination"
+
+subscribe-requestbin: ## receive sns notifications to RequestBin
+	aws sns subscribe --topic-arn ${SNS_SEND_DELETION} --protocol https --notification-endpoint ${REQUEST_BIN}
+	aws sns subscribe --topic-arn ${SNS_SEND_CANCELATION} --protocol https --notification-endpoint  ${REQUEST_BIN}
+	aws sns subscribe --topic-arn ${SNS_RCV_MSG} --protocol https --notification-endpoint  ${REQUEST_BIN}
+	aws sns subscribe --topic-arn ${SNS_RCV_DEL_ACT} --protocol https --notification-endpoint  ${REQUEST_BIN}
+
 

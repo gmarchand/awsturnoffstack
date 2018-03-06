@@ -6,10 +6,10 @@ Parameters:
     Type: Number
     Description: Seconds waited before stack termination
     Default: 60
-  terminationTag:
-    Type: String
-    Description: AWS resource tag key to terminate stack
-    Default: "notag=notag"
+  terminationTags:
+    Type: CommaDelimitedList
+    Description: 'AWS resource tags key to terminate stack, ex: "key1:value1,key2:value2"'
+    Default: "foo:bar,john:doe"
 Resources:
 
   SnsToSfnActivityLambdaRole:
@@ -190,6 +190,9 @@ Resources:
       Role: !GetAtt [ CfnTerminationLambdaRole,Arn ]
       Runtime: python3.6
       Timeout: 10
+      Environment:
+        Variables:
+          CFN_TAGS: !Join [ ",", !Ref terminationTags ]
   CfnTerminationLambdaRole: 
     Type: AWS::IAM::Role
     Properties:
@@ -214,7 +217,7 @@ Resources:
             Resource: arn:aws:logs:*:*:*
           - Effect: Allow
             Action:
-            - cloudformation:GetTemplateSummary
+            - cloudformation:DeleteStack
             - cloudformation:DescribeStacks
             Resource: "*"
   StateMachineSfn:
@@ -376,7 +379,7 @@ Outputs:
   SnsReceiveMessage:
     Description: Topic SNS to receive information
     Value: !Ref TopicSendNotifSns
-  SnsReceiveDeletionAxction:
+  SnsReceiveDeletionAction:
     Description: Topic SNS to receive order of environment deletion
     Value: !Ref TopicTerminateActionSns
 
