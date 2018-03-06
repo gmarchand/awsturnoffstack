@@ -243,6 +243,7 @@ Resources:
                   "Comment": "Send a notification that task will be execute soon",
                   "Type": "Task",
                   "Resource": "${SfnToSnsLambda}",
+                  "ResultPath": null,
                   "Next": "Parallel"
                 },
                 "Parallel": {
@@ -255,12 +256,15 @@ Resources:
                           "Comment": "The Activity is scheduled, we are waiting for a cancellation event",
                           "Type": "Wait",
                           "Seconds": 5,
+                          "InputPath":null,
                           "Next": "ActivityWorkerStatusTerminate"
                         },
                         "ActivityWorkerStatusTerminate": {
                           "Comment": "This task gets an activity task and send a fail status",
                           "Type": "Task",
                           "Resource": "${SfnActivityWorkerFailLambda}",
+                          "ResultPath": null,
+                          "InputPath":null,
                           "End": true
                         }
                       }
@@ -273,6 +277,7 @@ Resources:
                           "Comment": "Activity is waiting for an event from SNS",
                           "Resource": "${StateMachineActivity}",
                           "TimeoutSeconds": 10,
+                          "ResultPath": null,
                           "Next": "Cancel",
                           "Catch": [
                             {
@@ -287,14 +292,18 @@ Resources:
                           "Comment": "Activity Worker sends a cancellation event, so we cancel the task",
                           "Type": "Pass",
                           "Result": {
-                            "cancel": true
+                            "cancel": true,
+                            "terminate": false
                           },
                           "End": true
                         },
                         "Terminate": {
-                          "Type": "Task",
-                          "Resource": "${CfnTerminationLambda}",
                           "Comment": "No cancellation event, we execute the task",
+                          "Type": "Pass",
+                          "Result": {
+                            "cancel": false,
+                            "terminate": true
+                          },
                           "End": true
                         }
                       }
@@ -306,6 +315,7 @@ Resources:
                   "Comment": "Send an ending message",
                   "Type": "Task",
                   "Resource": "${SfnToSnsLambda}",
+                  "ResultPath": null,
                   "End": true
                 }
               }

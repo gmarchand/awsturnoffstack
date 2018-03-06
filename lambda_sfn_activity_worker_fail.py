@@ -19,12 +19,8 @@ def lambda_handler(event, context):
     print(response)
 
     print("Send task success")
-    taskToken = response["taskToken"]
-    output = json.dumps({'cancel':True,'terminate':False})
-
-    response = client.send_task_failure(
+    client.send_task_failure(
         taskToken=response["taskToken"]
     )
-    print(response)
-    
-    return "done"
+    return ""
+

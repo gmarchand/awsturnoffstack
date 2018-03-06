@@ -19,8 +19,14 @@ def lambda_handler(event, context):
         stacks += page["Stacks"]
 
     " compare each tag of each stack to each tag of cfn param "
+    output = {'cancel': False, 'terminate': True, 'stack': []}
+
     for stack in stacks:
         for tag in stack["Tags"]:
             for tagparam in tagsparamdict:
                 if tag['Key'] == tagparam[0] and tag['Value'] == tagparam[1]:
                     print('terminate stack %s', stack['StackId'])
+                    output['terminate'] = True
+                    output['stack'].append(stack['StackId'])
+
+    return output
