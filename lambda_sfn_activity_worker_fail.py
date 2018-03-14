@@ -5,20 +5,20 @@ import os
 
 
 def lambda_handler(event, context):
-    #print("Received event: " + json.dumps(event, indent=2))
+    """
+        SFN Task fails SFN Activity
+    """
 
-    print("Cancel Event from SNS to SFN")
     client = boto3.client("stepfunctions")
     activityArn = os.environ['ACTIVITY_ARN']
-    
-    print("Polling Activity Task")
+
+    " Polling Activity Task "
     response = client.get_activity_task(
         activityArn=activityArn,
         workerName='LambdaWorker'
     )
-    print(response)
 
-    print("Send task success")
+    " Worker executes the activity task "
     client.send_task_failure(
         taskToken=response["taskToken"]
     )

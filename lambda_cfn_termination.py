@@ -22,11 +22,17 @@ def lambda_handler(event, context):
     output = {'cancel': False, 'terminate': True, 'stack': []}
 
     for stack in stacks:
+        " List all cloudformation stacks "
+        matchTagNb = 0
         for tag in stack["Tags"]:
+            " List all tags of cloudformation tag "
             for tagparam in tagsparamdict:
+                " List all tags of env var "
                 if tag['Key'] == tagparam[0] and tag['Value'] == tagparam[1]:
-                    print('terminate stack %s', stack['StackId'])
-                    output['terminate'] = True
-                    output['stack'].append(stack['StackId'])
+                    matchTagNb += 1
+                    print('tag %s:%s found for %s', tag['Key'],tag['Value'],stack['StackId'])
+        if matchTagNb == len(tagsparamdict):
+            "All tags of env var matched : destroy this tag"
+            output['stack'].append(stack['StackId'])
 
     return output
