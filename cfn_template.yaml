@@ -5,7 +5,7 @@ Parameters:
   timeout:
     Type: Number
     Description: Seconds waited before stack termination
-    Default: 60
+    Default: 10
   terminationTags:
     Type: CommaDelimitedList
     Description: 'AWS resource tags key to terminate stack, ex: "key1:value1,key2:value2"'
@@ -255,7 +255,7 @@ Resources:
                         "WaitWorker": {
                           "Comment": "The Activity is scheduled, we are waiting for a cancellation event",
                           "Type": "Wait",
-                          "Seconds": 5,
+                          "Seconds": ${timeout},
                           "InputPath":null,
                           "Next": "ActivityWorkerStatusTerminate"
                         },
@@ -299,11 +299,8 @@ Resources:
                         },
                         "Terminate": {
                           "Comment": "No cancellation event, we execute the task",
-                          "Type": "Pass",
-                          "Result": {
-                            "cancel": false,
-                            "terminate": true
-                          },
+                          "Type": "Task",
+                          "Resource": "${CfnTerminationLambda}",
                           "End": true
                         }
                       }
@@ -320,7 +317,7 @@ Resources:
                 }
               }
             }
-          - {SfnToSnsLambda: !GetAtt [ SfnToSnsLambda, Arn ], SfnActivityWorkerFailLambda: !GetAtt [ SfnActivityWorkerFailLambda, Arn ], StateMachineActivity: !Ref StateMachineActivity, CfnTerminationLambda: !GetAtt [ CfnTerminationLambda, Arn ] }
+          - {SfnToSnsLambda: !GetAtt [ SfnToSnsLambda, Arn ], SfnActivityWorkerFailLambda: !GetAtt [ SfnActivityWorkerFailLambda, Arn ], StateMachineActivity: !Ref StateMachineActivity, timeout: !Ref timeout, CfnTerminationLambda: !GetAtt [ CfnTerminationLambda, Arn ] }
       RoleArn: !GetAtt StateMachineSfnRole.Arn
   StateMachineSfnRole: 
     Type: AWS::IAM::Role
@@ -383,14 +380,24 @@ Outputs:
   SnsSendDeletion:
     Description: Topic SNS to send a deletion notification of environment
     Value: !Ref TopicTerminateNotifRcvSns
+    Export:
+      Name: !Sub "${AWS::StackName}-SnsSendDeletion"
   SnsSendCancelation:
     Description: Topic SNS to send a cancelation notification of environment deletion
     Value: !Ref TopicCancelNotifRcvSns
+    Export:
+      Name: !Sub "${AWS::StackName}-SnsSendCancelation"
   SnsReceiveMessage:
     Description: Topic SNS to receive information
     Value: !Ref TopicSendNotifSns
+    Export:
+      Name: !Sub "${AWS::StackName}-SnsReceiveMessage"
   SnsReceiveDeletionAction:
     Description: Topic SNS to receive order of environment deletion
     Value: !Ref TopicTerminateActionSns
+    Export:
+      Name: !Sub "${AWS::StackName}-SnsReceiveDeletionAction"
+
+
 
 

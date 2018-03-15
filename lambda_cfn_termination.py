@@ -2,10 +2,13 @@ import boto3
 import json
 import time
 import os
+import logging
 
 class AwsCloudFormationException(Exception): pass
 
-# @TODO : Add IAM Policy based on tag parameter : http://garbe.io/blog/2017/07/17/cloudformation-hacks/
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     tagsparam = os.environ['CFN_TAGS']
@@ -34,5 +37,7 @@ def lambda_handler(event, context):
         if matchTagNb == len(tagsparamdict):
             "All tags of env var matched : destroy this tag"
             output['stack'].append(stack['StackId'])
+
+    logger.info("List of stacks terminated : %s", json.dumps(output['stack']))
 
     return output

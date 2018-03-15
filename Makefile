@@ -15,6 +15,12 @@ CFN_CHANGE_SET?=             $(GIT_REF_NAME)-$(GIT_REF_SHORT)
 
 DATE?=                       $(shell date +'%y.%m.%d %H:%M:%S')
 
+# Make does not offer a recursive wildcard function, so here's one:
+rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
+# How to recursively find all files that match a pattern
+ALL_CFN := $(call rwildcard,./,cfn_*.yaml)
+
 help:           ## prints help
 	@cat $(MAKEFILE_LIST) | grep -e "^[a-zA-Z_\-]*: *.*## *" | awk 'BEGIN {FS = ":.*?## "}; {printf " > \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
@@ -28,18 +34,24 @@ info: ## env info
 	@echo DATE = $(DATE)
 	@echo SNS_SEND_DELETION = $(SNS_SEND_DELETION)
 	@echo SNS_SEND_CANCELATION = $(SNS_SEND_CANCELATION)
+	@echo ALL_CFN = $(ALL_CFN)
+
+DEST?=./
+
+echo-all: $(ALL_CFN)
+	echo 1: = $0
 
 validate-stack: ## cfn validate template
-	aws cloudformation validate-template --template-body file://cfn_template.yaml
+	aws cloudformation validate-template --template-body file://${DEST}cfn_template.yaml
 
 create-stack: lambda-package	## cfn create stack
-	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
-	aws cloudformation deploy --template-file /tmp/packaged-template.yaml --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM
+	aws cloudformation package  --template-file ${DEST}cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/${DEST}packaged-template.yaml
+	aws cloudformation deploy --template-file /tmp/${DEST}packaged-template.yaml --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM
 
 
 update-stack: ## cfn update cfn template
-	aws cloudformation package  --template-file cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/packaged-template.yaml
-	aws cloudformation create-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM --template-body file:///tmp/packaged-template.yaml
+	aws cloudformation package  --template-file ${DEST}cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/${DEST}packaged-template.yaml
+	aws cloudformation create-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM --template-body file:///tmp/${DEST}packaged-template.yaml
 	aws cloudformation describe-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
 	sleep 10
 	aws cloudformation execute-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}

@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: 'AWS::Serverless-2016-10-31'
+Description: AWS Lambda function links SNS to Slack and Slack.
+
+Parameters:
+  SwitchOffStackName:
+    Type: String
+    Description: SwitchOff StackName
+    MinLength: 1
+    MaxLength: 255
+    AllowedPattern: ^[a-zA-Z][-a-zA-Z0-9]*$
+    Default: switchoff
+
+Resources:
+  lexToSnsLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_lex_to_sns.lambda_handler
+      Runtime: python3.6
+      Description: Link lex uterance to SNS topic
+      MemorySize: 128
+      Timeout: 3
+      Environment:
+        Variables:
+          SNS_SEND_DELETION:
+            Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsSendDeletion"
+          SNS_SEND_CANCELATION:
+            Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsSendCancelation"
+  snsToSlackHook:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_slack_incoming_webhook.lambda_handler
+      Runtime: python3.6
+      Description: link SNS to Slack Incoming Web Hook
+      MemorySize: 128
+      Timeout: 3
+      Environment:
+        Variables:
+          SNS_SEND_DELETION:
+            Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsReceiveMessage"
