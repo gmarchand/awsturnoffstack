@@ -44,13 +44,13 @@ echo-all: $(ALL_CFN)
 validate-stack: ## cfn validate template
 	aws cloudformation validate-template --template-body file://${DEST}cfn_template.yaml
 
-create-stack: lambda-package	## cfn create stack
-	aws cloudformation package  --template-file ${DEST}cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/${DEST}packaged-template.yaml
+foo: ## cfn create cfn template
+	aws cloudformation package --template-file ${DEST}cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/${DEST}packaged-template.yaml
 	aws cloudformation deploy --template-file /tmp/${DEST}packaged-template.yaml --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM
 
-
 update-stack: ## cfn update cfn template
-	aws cloudformation package  --template-file ${DEST}cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/${DEST}packaged-template.yaml
+	mkdir -p /tmp/${DEST}
+	aws cloudformation package --template-file ${DEST}cfn_template.yaml --s3-bucket ${S3_BUCKET} --output-template-file /tmp/${DEST}packaged-template.yaml
 	aws cloudformation create-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME} --capabilities CAPABILITY_IAM --template-body file:///tmp/${DEST}packaged-template.yaml
 	aws cloudformation describe-change-set --change-set-name ${CFN_CHANGE_SET} --stack-name ${STACK_NAME}
 	sleep 10

@@ -7,6 +7,8 @@ import os
 def lambda_handler(event, context):
     """
         Lambda receives SNS Notification and successes SFN Activity
+            https://github.com/codediodeio/lex-chatbot-lambda/blob/master/bot.py
+
     """
 
     client = boto3.client("stepfunctions")
