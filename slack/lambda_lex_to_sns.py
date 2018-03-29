@@ -149,17 +149,19 @@ def lambda_handler(event, context):
         if lex.intent == "SwitchOffCancel":
             snsResult= snsSendCancelation
             message = lex.fulfill("The termination of stack is canceled")
-        if lex.intent == "SwitchOffTerminate":
+        elif lex.intent == "SwitchOffTerminate":
             message = lex.fulfill("The termination of stack is starting. You can cancel if needed.")
             snsResult = snsSendDeletion
         else:
+            logger.info("Lex Intent %s not understanded" % lex.intent)
             message = lex.fulfill("I don't understand your request")
-        """
-        if not snsResult
+
+        if snsResult:
             client.publish(
                 TopicArn=snsResult,
                 Message=json.dumps("")
-        """
+            )
+
         return message
     except Exception as e:
         logger.error(e)

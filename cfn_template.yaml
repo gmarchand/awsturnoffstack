@@ -387,11 +387,11 @@ Outputs:
     Value: !Ref TopicCancelNotifRcvSns
     Export:
       Name: !Sub "${AWS::StackName}-SnsSendCancelation"
-  SnsReceiveMessage:
+  SnsSendMessage:
     Description: Topic SNS to receive information
     Value: !Ref TopicSendNotifSns
     Export:
-      Name: !Sub "${AWS::StackName}-SnsReceiveMessage"
+      Name: !Sub "${AWS::StackName}-SnsSendMessage"
   SnsReceiveDeletionAction:
     Description: Topic SNS to receive order of environment deletion
     Value: !Ref TopicTerminateActionSns

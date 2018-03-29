@@ -10,6 +10,11 @@ Parameters:
     MaxLength: 255
     AllowedPattern: ^[a-zA-Z][-a-zA-Z0-9]*$
     Default: switchoff
+  SlackWebHook:
+    Type: String
+    Description: Slack Incoming WebHook
+    MinLength: 1
+    MaxLength: 255
 
 Resources:
   lexToSnsLambda:
@@ -19,6 +24,13 @@ Resources:
       Runtime: python3.6
       Description: Link lex uterance to SNS topic
       MemorySize: 128
+      Policies:
+      - SNSPublishMessagePolicy:
+            TopicName:
+              Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsSendDeletion"
+      - SNSPublishMessagePolicy:
+            TopicName:
+              Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsSendCancelation"
       Timeout: 3
       Environment:
         Variables:
@@ -34,7 +46,13 @@ Resources:
       Description: link SNS to Slack Incoming Web Hook
       MemorySize: 128
       Timeout: 3
+      Events:
+        SNS1:
+          Type: SNS
+          Properties:
+            Topic:
+              Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsSendMessage"
       Environment:
         Variables:
-          SNS_SEND_DELETION:
-            Fn::ImportValue: !Sub "${SwitchOffStackName}-SnsReceiveMessage"
+          SLACK_WEBHOOK_URL:
+            !Ref SlackWebHook

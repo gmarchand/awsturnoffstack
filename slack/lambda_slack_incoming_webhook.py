@@ -3,25 +3,24 @@ from __future__ import print_function
 import json
 import boto3
 import os
+import requests
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     """
-        Lambda receives SNS Notification and successes SFN Activity
-            https://github.com/codediodeio/lex-chatbot-lambda/blob/master/bot.py
+        Lambda receives SNS Notification and push it to slack
+
 
     """
+    webhook_url = os.environ['SLACK_WEBHOOK_URL']
 
-    client = boto3.client("stepfunctions")
-    activityArn = os.environ['ACTIVITY_ARN']
-
-    response = client.get_activity_task(
-        activityArn=activityArn,
-        workerName='LambdaSnsToSfnActivity'
+    slack_data = {'text': json.dumps(event)}
+    response = requests.post(
+        webhook_url, data=json.dumps(slack_data),
+        headers={'Content-Type': 'application/json'}
     )
-
-    taskToken = response["taskToken"]
-    output = json.dumps({'cancel':True,'terminate':False})
-    response = client.send_task_success(
-        taskToken=response["taskToken"],
-        output=output
-    )
+    if response.status_code != 200:
+        logger.error('Request to slack returned an error %s, the response is:\n%s' % (response.status_code, response.text))
